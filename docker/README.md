@@ -35,11 +35,12 @@ You can provide a customized **openbmpd.conf**.  See [Config Example](https://gi
 #### Environment Variables
 Below table lists the environment variables that can be used with ``docker run -e <name=value>``
 
-NAME | Value | Details
-:---- | ----- |: -------
-KAFKA\_FQDN | hostanme or IP | Kafka broker hostname[:port].  Hostname can be an IP address
-OPENBMP\_ADMIN\_ID | name or IP | Name or IP of the collector, default is the docker hostname
-OPENBMP\_BUFFER | Size in MB | Defines the openbmpd buffer per router for BMP messages. Default is 16 MB.
+| NAME | Value | Details |
+| :---- | ----- | :------- |
+| KAFKA\_FQDN | hostname or IP | Kafka broker hostname[:port].  Hostname can be an IP address |
+| ADMIN\_ID | name or IP | Identifying name of the collector instance. Default is 'collector' |
+| OPENBMP\_BUFFER | Size in MB | Defines the openbmpd buffer per router for BMP messages. Default is 16 MB. |
+| LISTEN\_MODE | v4, v6, or both | Defines the listen mode for the collector.  Default is both. |
 
 #### Run normally
 
@@ -47,7 +48,7 @@ OPENBMP\_BUFFER | Size in MB | Defines the openbmpd buffer per router for BMP me
 > You must define the **KAFKA_FQDN** as a 'hostname'.  If all containers are running on the same node, this
 > hostname can be local specific, such as 'localhost' or 'myhost'. If Kafka is running on a different server,
 > than the consumers and producers, then the KAFKA_FQDN should be a valid hostname that can be resolved using DNS.
-> This can be internal DNS or manually done by updating the /etc/hosts file on each machine.
+> This can be internal DNS, manually by updating the /etc/hosts file on each machine, or by using the docker extra_hosts option.
 
     docker run -d --name=obmp_collector -e KAFKA_FQDN=localhost \
          --sysctl net.ipv4.tcp_keepalive_intvl=30 \
