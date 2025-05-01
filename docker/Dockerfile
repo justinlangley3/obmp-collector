@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1.3
 # Collector: openbmp/collector
 #
 #  Copyright (c) 2021-2022 Cisco Systems, Inc. and others.  All rights reserved.
