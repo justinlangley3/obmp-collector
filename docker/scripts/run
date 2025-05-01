@@ -55,6 +55,7 @@ fi
 OPENBMP_CFG_FILE=/usr/etc/openbmp/openbmpd.conf
 sed -r -i "s/admin_id:.*/admin_id: ${ADMIN_ID}/" /usr/etc/openbmp/openbmpd.conf
 sed -r -i "s/localhost:9092/${KAFKA_FQDN}/" /usr/etc/openbmp/openbmpd.conf
+sed -r -i "s/listen_mode:.*/listen_mode: ${LISTEN_MODE}/" /usr/etc/openbmp/openbmpd.conf
 
 if [[ -f /config/openbmpd.conf ]]; then
     OPENBMP_CFG_FILE=/config/openbmpd.conf
