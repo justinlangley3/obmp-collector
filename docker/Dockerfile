@@ -22,50 +22,104 @@
 # -----------------------------------------------
 # stage: Build collector
 # -----------------------------------------------
-FROM openbmp/dev-image:latest AS build
+FROM alpine:3.21 AS build
 
-COPY obmp-collector/ /ws
+# Add source files
 WORKDIR /ws
+COPY . .
 
-RUN rm -rf build && mkdir -p build && cd build \
-    && cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX:PATH=/usr ../ \
+# Install build dependencies
+RUN apk update \
+    && apk add --no-cache \
+         bash \
+         git \
+         # c++ toolchain
+         binutils \
+         cmake \
+         g++ \
+         gcc \
+         libstdc++ \
+         make \
+         musl \
+         # libraries
+         boost-dev \
+         cyrus-sasl-dev \
+         librdkafka-dev \
+         lz4-dev \
+         openssl-dev \
+         yaml-cpp-dev \
+         zlib-dev \
+         zstd-dev
+
+# Build the collector
+RUN rm -rf build \
+    && mkdir -p build \
+    && cd build \
+    && cmake \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=/usr \
+        .. \
     && make \
     && make install
 
+# Remove build libs to keep image small
+RUN apk del \
+      boost-dev \
+      cyrus-sasl-dev \
+      librdkafka-dev \
+      lz4-dev \
+      openssl-dev \
+      yaml-cpp-dev \
+      zlib-dev \
+      zstd-dev \
+    # clean package cache
+    && rm -rf /var/cache/apk/*
 
 # -----------------------------------------------
-# stage: Final container
+# stage: Final image
 # -----------------------------------------------
-# Pull base image.
-FROM debian:stable-slim
-
-# Add files.
-ADD --chmod=755 obmp-docker/collector/scripts/install /tmp/
-ADD --chmod=755 obmp-docker/collector/scripts/run /usr/sbin/
-
-ARG VERSION=0
-
-# Copy files from previous stages
-COPY --chmod=755 --from=build /usr/bin/openbmpd /usr/bin/
-COPY --from=build /usr/etc/openbmp/openbmpd.conf /usr/etc/openbmp/openbmpd.conf
+FROM alpine:3.21
 
 # Proxy servers
-#ENV http_proxy http://proxy:80
-#ENV https_proxy http://proxy:80
+#ENV http_proxy=http://proxy:80
+#ENV https_proxy=http://proxy:80
 #ENV no_proxy "domain.com"
 
-# Run Install script
-RUN /tmp/install
+# Install runtime dependencies
+RUN apk update \
+    && apk add --no-cache \
+         bash \
+         iproute2 \
+         cyrus-sasl \
+         libgcc \
+         librdkafka \
+         libstdc++ \
+         openssl \
+         yaml-cpp \
+         zlib \
+    # clean package cache
+    && rm -rf /var/cache/apk/*
 
-# Define mount points.
+# Add required files
+RUN mkdir -p /usr/etc/openbmp /usr/local/bin
+COPY --from=build /usr/bin/openbmpd /usr/local/bin/
+COPY --from=build /usr/etc/openbmp/openbmpd.conf /usr/etc/openbmp/openbmpd.conf
+
+# Set version and default configuration
+ARG VERSION=0.0.0
+RUN touch /usr/local/version-${VERSION} \
+    && mkdir -p /etc/default \
+    && touch /etc/default/openbmpd \
+    && chmod 644 /etc/default/openbmpd
+
+# Add the run script
+COPY --chmod=755 docker/scripts/run /usr/local/bin
+
+# Define mount points
 VOLUME ["/config"]
 
-# Define working directory.
 WORKDIR /tmp
 
-# Define default command.
-CMD ["/usr/sbin/run"]
+CMD ["/usr/local/bin/run"]
 
-# Expose ports.
-# openbmpd/collector
-EXPOSE 5000         
+EXPOSE 5000
