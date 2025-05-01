@@ -1,25 +1,22 @@
 # Collector: openbmp/collector
 #
-#  Copyright (c) 2021-2022 Cisco Systems, Inc. and others.  All rights reserved.
+# Copyright (c) 2021-2022 Cisco Systems, Inc. and others.  All rights reserved.
 #
-# Author: Tim Evens <tim@openbmp.org>
+# Original Author: Tim Evens <tim@openbmp.org>
 #
 # BUILD:
 #
-#   Docker context does not support multiple paths or mounting volumes for builds.
-#   In effort to build the container from local git clones, we dynamically build a context
+#   Use buildkit - either via export DOCKER_BUILDKIT=1 or by using buildx cli
 #
-#   Clone the obmp-collector and obmp-docker repos into the same directory.
-#   Change directories to obmp-docker/collector and run the below from that
-#   directory.
+#   Run the following from the obmp-collector project root:
 #
-# Use buildkit - either via export DOCKER_BUILDKIT=1 or by using buildx cli
-#
-#   Example docker build:
-#     tar -c -C ../../ ./obmp-collector ./obmp-docker/collector \
-#           | docker buildx build --platform linux/amd64 --progress=plain \
-#                 --build-arg VERSION=2.2.3 \
-#                 -f obmp-docker/collector/Dockerfile -t openbmp/collector:2.2.3 -
+#   docker buildx build \
+#     --platform linux/amd64 \
+#     --progress=plain \
+#     --build-arg VERSION=2.2.3 \
+#     -f docker/Dockerfile \
+#     -t openbmp/collector:2.2.3 \
+#     .
 #
 
 # -----------------------------------------------
