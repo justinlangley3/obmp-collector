@@ -1,9 +1,8 @@
 #!/bin/bash
-# All-in-One run script
 #
 # Copyright (c) 2021 Cisco Systems, Inc. and Tim Evens.  All rights reserved.
 #
-# Author: Tim Evens <tim@openbmp.org>
+# Original Author: Tim Evens <tim@openbmp.org>
 #
 ADMIN_ID=${ADMIN_ID:="collector"}
 
