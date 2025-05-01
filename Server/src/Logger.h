@@ -6,6 +6,16 @@
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  *
  */
+#ifdef _GNU_SOURCE
+/*
+ * Include <sys/types.h> to support u_char and other BSD-style types.
+ * This is necessary when building on Alpine or musl-based systems,
+ * where _GNU_SOURCE is defined to expose these types.
+ * The inclusion is conditional based on _GNU_SOURCE being defined.
+ */
+#include <sys/types.h>
+#endif
+
 #ifndef LOGGER_H_
 #define LOGGER_H_
 
