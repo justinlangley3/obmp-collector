@@ -123,6 +123,8 @@ void Config::load(const char *cfg_filename) {
         throw err.what();
     }
 
+    printKafkaProperties();
+
     if (debug_general)
         std::cout << "---| Done Loading configuration file |------------------------- " << std::endl;
 }
@@ -381,8 +383,6 @@ void Config::parseKafka(const YAML::Node &node) {
             kafka_config_map[key] = node.as<std::string>();
         }
     }
-
-    printKafkaProperties();
 }
 
 /**
@@ -703,7 +703,6 @@ bool Config::isSensitive(const std::string& key) {
  *
  */
 void Config::printKafkaProperties() {
-    if (!debug_general) return;
 
     std::cout << "Kafka Properties:" << std::endl;
 
