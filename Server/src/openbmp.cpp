@@ -246,8 +246,8 @@ bool ReadCmdArgs(int argc, char **argv, Config &cfg) {
             if (!strcasecmp(argv[i], "v4")) {
                 cfg.svr_ipv4 = true;
             } else if (!strcasecmp(argv[i], "v6")) {
-                cfg.svr_ipv6 = true;
                 cfg.svr_ipv4 = false;
+                cfg.svr_ipv6 = true;
             } else if (!strcasecmp(argv[i], "v4v6")) {
                 cfg.svr_ipv6 = true;
                 cfg.svr_ipv4 = true;
@@ -263,7 +263,9 @@ bool ReadCmdArgs(int argc, char **argv, Config &cfg) {
                 return true;
             }
 
-            cfg.kafka_brokers = argv[++i];
+            std::string brokersArg = argv[++i];
+	    cfg.kafka_brokers = brokersArg;
+            // cfg.kafka_brokers = argv[++i];
 
         } else if (!strcmp(argv[i], "-a")) {
             if (i + 1 >= argc) {
