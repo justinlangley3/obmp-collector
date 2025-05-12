@@ -164,16 +164,15 @@ void msgBus_kafka::disconnect(int wait_ms) {
  */
 void msgBus_kafka::connect() {
     string value;
-    std::string errstr;
+    string errstr;
 
     disconnect();
 
     for (const auto &kv : cfg->kafka_config_map) {
         RdKafka::Conf::ConfResult result = conf->set(kv.first, kv.second, errstr);
         if (result != RdKafka::Conf::CONF_OK) {
-            throw std::runtime_error("Kafka config error: key=\"" + kv.first +
-                                     "\", value=\"" + kv.second +
-                                     "\", error=" + errstr);
+            LOG_ERR("Failed to set Kafka configuration: %s=%s: %s", kv.first.c_str(), kv.second.c_str(), errstr.c_str());
+            throw "ERROR: Failed to set kafka configuration";
         }
     }
     
@@ -181,15 +180,15 @@ void msgBus_kafka::connect() {
     event_callback = new KafkaEventCallback(&isConnected, logger);
     if ( conf->set("event_cb", event_callback, errstr) != RdKafka::Conf::CONF_OK ) {
         LOG_ERR("Failed to configure kafka event callback: %s", errstr.c_str());
-        throw std::runtime_error("Failed to configure Kafka event callback: " + errstr);
+        throw "ERROR: Failed to configure kafka event callback";
     }
 
     // Register delivery report callback
     /*
     delivery_callback = new KafkaDeliveryReportCallback();
-    if ( conf->set("dr_cb", delivery_callback, errstr) != RdKafka::Conf::CONF_OK ) {
+    if (conf->set("dr_cb", delivery_callback, errstr) != RdKafka::Conf::CONF_OK) {
         LOG_ERR("Failed to configure kafka delivery report callback: %s", errstr.c_str());
-	throw std::runtime_error("Failed to configure Kafka delivery report callback: " + errstr);
+        throw "ERROR: Failed to configure Kafka delivery report callback";
     }
     */
 
@@ -198,7 +197,7 @@ void msgBus_kafka::connect() {
     producer = RdKafka::Producer::create(conf, errstr);
     if (producer == NULL) {
         LOG_ERR("rtr=%s: Failed to create producer: %s", router_ip.c_str(), errstr.c_str());
-        throw std::runtime_error("Failed to create Kafka producer: " + errstr);
+        throw "ERROR: Failed to create producer";
     }
 
     isConnected = true;

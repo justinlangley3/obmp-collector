@@ -25,7 +25,6 @@
 #include <yaml-cpp/yaml.h>
 #include <boost/xpressive/xpressive.hpp>
 #include <boost/exception/all.hpp>
-#include <sys/types.h>
 
 #define MAX_THREADS 200
 
@@ -120,4 +119,3 @@ private:
 };
 
 #endif /* CONFIG_H_ */
-

@@ -401,7 +401,7 @@ void Config::parseBrokers(const YAML::Node &node) {
     } else if (node.IsScalar()) {
         brokersStream << node.as<std::string>();
     } else {
-        throw std::runtime_error("Invalid type for 'brokers' or 'bootstrap.servers'; must be string or list of strings.");
+        throw "Invalid type for 'brokers' or 'bootstrap.servers'; must be string or list of strings.";
     }
 
     kafka_brokers = brokersStream.str();
@@ -739,4 +739,3 @@ void Config::printWarning(const std::string msg, const YAML::Node &node) {
     }
     std::cout << "WARN: " << msg << " : " << type << " = " << node.Scalar() << std::endl ;
 }
-
