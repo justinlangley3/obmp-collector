@@ -1,21 +1,6 @@
 #!/bin/bash
 
-spinner() {
-  local chars='-\|/'
-  local duration=30
-  local i=0
 
-  while [ $duration -gt 0 ]; do
-    for ((j=0; j<10; j++)); do  # 10 frames per second
-      printf "\r%2d seconds remaining ... %c" "$duration" "${chars:i%4:1}"
-      sleep 0.1
-      ((i++))
-    done
-    ((duration--))
-  done
-
-  echo -e "\rDone!                         "
-}
 
 echo "===> Ensuring directories exist"
 mkdir -p /config
@@ -33,6 +18,6 @@ if [[ $# -eq 0 ]]; then
 fi
 
 echo "===> Delaying 30 seconds for other containers to startup"
-spinner
-echo "===> Starting OpenBMP Collector"
+sleep 30
+
 exec "$@"
