@@ -95,30 +95,24 @@ RUN apk update \
          libstdc++ \
          openssl \
          yaml-cpp \
+         yq-go \
          zlib \
     # clean package cache
     && rm -rf /var/cache/apk/*
 
-# Add required files
-RUN mkdir -p /usr/etc/openbmp /usr/local/bin
-COPY --from=build /usr/bin/openbmpd /usr/local/bin/
-COPY --from=build /usr/etc/openbmp/openbmpd.conf /usr/etc/openbmp/openbmpd.conf
-
 # Set version and default configuration
 ARG VERSION=0.0.0
-RUN touch /usr/local/version-${VERSION} \
-    && mkdir -p /etc/default \
-    && touch /etc/default/openbmpd \
-    && chmod 644 /etc/default/openbmpd
+RUN touch /usr/local/version-${VERSION}
 
-# Add the run script
-COPY --chmod=755 docker/scripts/run /usr/local/bin
-
-# Define mount points
-VOLUME ["/config"]
+# Add required files
+COPY --from=build /usr/bin/openbmpd /usr/bin/
+COPY --chmod=755 docker/scripts/configure/01_generate_config /usr/bin/openbmpd-configure
+COPY --chmod=755 docker/scripts/docker-entrypoint.sh /docker-entrypoint.sh
 
 WORKDIR /tmp
 
-CMD ["/usr/local/bin/run"]
+ENTRYPOINT ["/docker-entrypoint.sh"]
+
+CMD ["/usr/bin/openbmpd", "-f", "-c", "/config/openbmpd.conf"]
 
 EXPOSE 5000

@@ -1,0 +1,72 @@
+networks:
+  openbmp:
+    name: openbmp
+    ipam:
+      config:
+        - subnet: 172.20.0.0/24
+          gateway: 172.20.0.1
+
+volumes:
+  pki:
+    name: openbmp-pki
+    external: true
+
+services:
+  collector:
+    restart: unless-stopped
+    container_name: obmp-collector
+    image: openbmp/collector:2.2.3
+    extra_hosts:
+      - "kafka1:192.0.2.1"
+      - "kafka2:192.0.2.2"
+      - "kafka3:192.0.2.3
+    ports:
+      - "5000:5000"
+    networks:
+      openbmp:
+        ipv4_address: 172.20.0.2
+    volumes:
+      - /home/justin/config:/config
+      - pki:/etc/openbmp/pki:ro
+    sysctls:
+      - net.ipv4.tcp_keepalive_intvl=30
+      - net.ipv4.tcp_keepalive_probes=5
+      - net.ipv4.tcp_keepalive_time=180
+    environment:
+      OPENBMP_ADMIN_ID: collector
+      OPENBMP_LISTEN_PORT: 5000
+      OPENBMP_LISTEN_MODE: both
+      OPENBMP_HEARTBEAT_INTERVAL: 60
+      OPENBMP_DEBUG_GENERAL: true
+      OPENBMP_KAFKA_BROKERS: "kafka1:9092,kafka2:9092"
+      OPENBMP_KAFKA_SSL_ENABLED: true
+      OPENBMP_KAFKA_SSL_CERTIFICATE_LOCATION: /etc/openbmp/pki/openbmp.pem
+      OPENBMP_KAFKA_SSL_KEY_LOCATION: /etc/openbmp/pki/openbmp.key
+      OPENBMP_KAFKA_SSL_CA_LOCATION: /etc/openbmp/pki/openbmp_ca.pem
+
+# GoBGP for testing
+#  gobgp1:
+#    restart: unless-stopped
+#    container_name: obmp-bgp1
+#    image: quay.io/labmonkeys/gobgp:3.15.0.b1887
+#    networks:
+#      openbmp:
+#        ipv4_address: 172.20.0.3
+#    environment:
+#      - TZ=UTC
+#    volumes:
+#      - ./gobgp1.conf:/gobgpd.conf
+#    command: ["-f", "/gobgpd.conf"]
+#
+#  gobgp2:
+#    restart: unless-stopped
+#    container_name: obmp-bgp2
+#    image: quay.io/labmonkeys/gobgp:3.15.0.b1887
+#    networks:
+#      openbmp:
+#        ipv4_address: 172.20.0.4
+#    environment:
+#      - TZ=UTC
+#    volumes:
+#      - ./gobgp2.conf:/gobgpd.conf
+#    command: ["-f", "/gobgpd.conf"]

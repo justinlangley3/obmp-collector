@@ -1,0 +1,187 @@
+#!/bin/bash
+set -e
+
+# set the final configuration path
+OPENBMP_CONFIG_FILE="/config/openbmpd.conf"
+
+# collector base configuration
+BASE_DEFAULTS="
+base:
+  admin_id: 'collector'
+  listen_port: 5000
+  listen_mode: 'both'
+  buffers:
+    router: 40
+  heartbeat:
+    interval: 5
+  startup:
+    max_concurrent_routers: 0
+    initial_router_time: 60
+    calculate_baseline: false
+    pat_enabled: true
+"
+
+# debug toggles for collector components
+DEBUG_DEFAULTS="
+debug:
+  general:
+  bmp: false
+  bgp: false
+  msgbus: false
+"
+
+# default Kafka message bus settings
+KAFKA_DEFAULTS="
+kafka:
+  message.max.bytes: 1000000
+  receive.message.max.bytes: 200000000
+  socket.timeout.ms: 30000
+  queue.buffering.max.messages: 50000
+  queue.buffering.max.kbytes: 30000
+  queue.buffering.max.ms: 150
+  message.send.max.retries: 2
+  retry.backoff.ms: 200
+  compression.codec: lz4
+  security.protocol: PLAINTEXT
+  brokers:
+    - kafka:29092
+  topics:
+    variables:
+      root: openbmp
+      raw: bmp_raw
+      parsed: parsed
+    names:
+      collector: '{root}.{parsed}.collector'
+      router: '{root}.{parsed}.router'
+      peer: '{root}.{parsed}.peer'
+      bmp_stat: '{root}.{parsed}.bmp_stat'
+      bmp_raw: '{root}.{raw}'
+      base_attribute: '{root}.{parsed}.base_attribute'
+      unicast_prefix: '{root}.{parsed}.unicast_prefix'
+      ls_node: '{root}.{parsed}.ls_node'
+      ls_link: '{root}.{parsed}.ls_link'
+      ls_prefix: '{root}.{parsed}.ls_prefix'
+      l3vpn: '{root}.{parsed}.l3vpn'
+      evpn: '{root}.{parsed}.evpn'
+"
+
+# default mappings (none)
+MAPPING_DEFAULTS="
+mapping:
+  groups:
+    router_group: []
+    peer_group: []
+"
+
+# initialize a configuration by merging the base values
+FINAL_CONFIG="$BASE_DEFAULTS$DEBUG_DEFAULTS$KAFKA_DEFAULTS$MAPPING_DEFAULTS"
+
+# If OPENBMP_CONFIG is set, merge it with the final configuration, and
+# still give individual environment variables a higher precedence
+if [ -n "$OPENBMP_CONFIG" ]; then
+  FINAL_CONFIG=$(yq eval-all 'select(fileIndex == 0) * select(fileIndex == 1)' <(echo "$FINAL_CONFIG") <(echo "$OPENBMP_CONFIG"))
+fi
+
+# Override configuration with environment variables if set
+# Priority is given to the environment variables over any other defaults
+
+# base settings
+if [ -n "$OPENBMP_ADMIN_ID" ]; then
+  FINAL_CONFIG=$(echo "$FINAL_CONFIG" | yq eval ".base.admin_id = \"$OPENBMP_ADMIN_ID\"" -)
+fi
+
+if [ -n "$OPENBMP_LISTEN_PORT" ]; then
+  FINAL_CONFIG=$(echo "$FINAL_CONFIG" | yq eval ".base.listen_port = $OPENBMP_LISTEN_PORT" -)
+fi
+
+if [ -n "$OPENBMP_LISTEN_MODE" ]; then
+  FINAL_CONFIG=$(echo "$FINAL_CONFIG" | yq eval ".base.listen_mode = \"$OPENBMP_LISTEN_MODE\"" -)
+fi
+
+if [ -n "$OPENBMP_BUFFERS_ROUTER" ]; then
+  FINAL_CONFIG=$(echo "$FINAL_CONFIG" | yq eval ".base.buffers.router = $OPENBMP_BUFFERS_ROUTER" -)
+fi
+
+if [ -n "$OPENBMP_HEARTBEAT_INTERVAL" ]; then
+  FINAL_CONFIG=$(echo "$FINAL_CONFIG" | yq eval ".base.heartbeat.interval = $OPENBMP_HEARTBEAT_INTERVAL" -)
+fi
+
+if [ -n "$OPENBMP_STARTUP_MAX_CONCURRENT_ROUTERS" ]; then
+  FINAL_CONFIG=$(echo "$FINAL_CONFIG" | yq eval ".base.startup.max_concurrent_routers = $OPENBMP_STARTUP_MAX_CONCURRENT_ROUTERS" -)
+fi
+
+if [ -n "$OPENBMP_STARTUP_INITIAL_ROUTER_TIME" ]; then
+  FINAL_CONFIG=$(echo "$FINAL_CONFIG" | yq eval ".base.startup.initial_router_time = $OPENBMP_STARTUP_INITIAL_ROUTER_TIME" -)
+fi
+
+if [ -n "$OPENBMP_STARTUP_CALCULATE_BASELINE" ]; then
+  FINAL_CONFIG=$(echo "$FINAL_CONFIG" | yq eval ".base.startup.calculate_baseline = $OPENBMP_STARTUP_CALCULATE_BASELINE" -)
+fi
+
+if [ -n "$OPENBMP_STARTUP_PAT_ENABLED" ]; then
+  FINAL_CONFIG=$(echo "$FINAL_CONFIG" | yq eval ".base.startup.pat_enabled = $OPENBMP_STARTUP_PAT_ENABLED" -)
+fi
+
+
+# debug settings
+if [ -n "$OPENBMP_DEBUG_GENERAL" ]; then
+  FINAL_CONFIG=$(echo "$FINAL_CONFIG" | yq eval ".debug.general = $OPENBMP_DEBUG_GENERAL" -)
+fi
+
+if [ -n "$OPENBMP_DEBUG_BMP" ]; then
+  FINAL_CONFIG=$(echo "$FINAL_CONFIG" | yq eval ".debug.bmp = $OPENBMP_DEBUG_BMP" -)
+fi
+
+if [ -n "$OPENBMP_DEBUG_BGP" ]; then
+  FINAL_CONFIG=$(echo "$FINAL_CONFIG" | yq eval ".debug.bgp = $OPENBMP_DEBUG_BGP" -)
+fi
+
+if [ -n "$OPENBMP_DEBUG_KAFKA" ]; then
+  FINAL_CONFIG=$(echo "$FINAL_CONFIG" | yq eval ".debug.msgbus = $OPENBMP_DEBUG_KAFKA" -)
+fi
+
+
+# Kafka settings
+if [ -n "$OPENBMP_KAFKA_BROKERS" ]; then
+  # Convert comma-separated string into a list using yq
+  FINAL_CONFIG=$(echo "$FINAL_CONFIG" | yq eval ".kafka.brokers = strenv(OPENBMP_KAFKA_BROKERS) | .kafka.brokers = (.kafka.brokers | split(\",\"))" -)
+fi
+
+if [ -n "$OPENBMP_KAFKA_SECURITY_PROTOCOL" ]; then
+  FINAL_CONFIG=$(echo "$FINAL_CONFIG" | yq eval ".kafka.\"security.protocol\" = \"$OPENBMP_KAFKA_SECURITY_PROTOCOL\"" -)
+fi
+
+if [ "$OPENBMP_KAFKA_SSL_ENABLED" = "true" ]; then
+  FINAL_CONFIG=$(echo "$FINAL_CONFIG" | yq eval ".kafka.\"security.protocol\" = \"SSL\"" -)
+fi
+
+if [ -n "$OPENBMP_KAFKA_SSL_CA_LOCATION" ]; then
+  FINAL_CONFIG=$(echo "$FINAL_CONFIG" | yq eval ".kafka.\"ssl.ca.location\" = \"$OPENBMP_KAFKA_SSL_CA_LOCATION\"" -)
+fi
+
+if [ -n "$OPENBMP_KAFKA_SSL_CERTIFICATE_LOCATION" ]; then
+  FINAL_CONFIG=$(echo "$FINAL_CONFIG" | yq eval ".kafka.\"ssl.certificate.location\" = \"$OPENBMP_KAFKA_SSL_CERTIFICATE_LOCATION\"" -)
+fi
+
+if [ -n "$OPENBMP_KAFKA_SSL_KEY_LOCATION" ]; then
+  FINAL_CONFIG=$(echo "$FINAL_CONFIG" | yq eval ".kafka.\"ssl.key.location\" = \"$OPENBMP_KAFKA_SSL_KEY_LOCATION\"" -)
+fi
+
+if [ -n "$OPENBMP_KAFKA_SSL_KEY_PASSWORD" ]; then
+  FINAL_CONFIG=$(echo "$FINAL_CONFIG" | yq eval ".kafka.\"ssl.key.password\" = \"$OPENBMP_KAFKA_SSL_KEY_PASSWORD\"" -)
+fi
+
+# group mapping settings
+if [ -n "$OPENBMP_ROUTER_GROUP_MAPPING" ]; then
+  FINAL_CONFIG=$(echo "$FINAL_CONFIG" | yq eval ".mapping.groups.router_group = $OPENBMP_ROUTER_GROUP_MAPPING" -)
+fi
+
+if [ -n "$OPENBMP_PEER_GROUP_MAPPING" ]; then
+  FINAL_CONFIG=$(echo "$FINAL_CONFIG" | yq eval ".mapping.groups.peer_group = $OPENBMP_PEER_GROUP_MAPPING" -)
+fi
+
+# save out the final configuration
+echo "$FINAL_CONFIG" > "$OPENBMP_CONFIG_FILE"
+
+# notify of completion
+echo "===> OpenBMP configuration generated at $OPENBMP_CONFIG_FILE"

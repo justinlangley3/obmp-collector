@@ -370,17 +370,18 @@ void Config::parseKafka(const YAML::Node &node) {
 
     for (YAML::const_iterator it = node.begin(); it != node.end(); ++it) {
         const std::string key = it->first.as<std::string>();
-        const YAML::Node& node = it->second;
+        const YAML::Node& valueNode = it->second;
 
-        // handle cases where keys are not a simple type
-        if (key == "brokers" || key == "bootstrap.servers") {
-            parseBrokers(node);
-        }
-        else if (key == "topics" && node.Type() == YAML::NodeType::Map) {
-            parseTopics(node);
-        }
-        else {
-            kafka_config_map[key] = node.as<std::string>();
+        if (key == "brokers" || key == "metadata.broker.list") {
+            parseBrokers(valueNode);
+        } else if (key == "topics" && valueNode.Type() == YAML::NodeType::Map) {
+            parseTopics(valueNode);
+        } else if (valueNode.IsScalar()) {
+            kafka_config_map[key] = valueNode.as<std::string>();
+        } else {
+            std::ostringstream err;
+            err << "Invalid type for kafka config key '" << key << "': expected string";
+            throw std::runtime_error(err.str());
         }
     }
 }
@@ -401,12 +402,13 @@ void Config::parseBrokers(const YAML::Node &node) {
     } else if (node.IsScalar()) {
         brokersStream << node.as<std::string>();
     } else {
-        throw "Invalid type for 'brokers' or 'bootstrap.servers'; must be string or list of strings.";
+        throw std::runtime_error("Invalid type for 'brokers' or 'metadata.broker.list'; must be string or list of strings.");
     }
 
     kafka_brokers = brokersStream.str();
-    kafka_config_map["bootstrap.servers"] = kafka_brokers;
+    kafka_config_map["metadata.broker.list"] = kafka_brokers;
 }
+
 
 /**
  * Parse the kafka topics configuration
