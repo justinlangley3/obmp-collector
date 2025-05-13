@@ -32,7 +32,7 @@ All keys are preceded with **OPENBMP_** including the Kafka specific keys.
 ##### Global Configuration
 
 Configuration is regenerated at container startup based on this procedure:
-1. A base configuration is initialized from sane defaults in [01_generate_config.sh](scripts/configure/01_generate_config.sh)
+1. A base configuration is initialized from sane defaults in [01_generate_config](scripts/configure/01_generate_config)
 2. If the **OPENBMP_CONFIG** environment variable is set, it is parsed and merged with the base configuration.
 3. Remaining environment variables have the highest precedence and override all previous settings.
 4. The final configuration is written to a file `/config/openbmpd.conf` and used by the collector.
