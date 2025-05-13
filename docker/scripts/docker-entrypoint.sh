@@ -1,7 +1,5 @@
 #!/bin/bash
 
-
-
 echo "===> Ensuring directories exist"
 mkdir -p /config
 

@@ -2,7 +2,7 @@
 set -e
 
 # set the final configuration path
-OPENBMP_CONFIG_FILE="/config/openbmpd.conf"
+OPENBMP_CONFIG_FILE="./test.yaml"
 
 # collector base configuration
 BASE_DEFAULTS="
@@ -171,13 +171,14 @@ if [ -n "$OPENBMP_KAFKA_SSL_KEY_PASSWORD" ]; then
   FINAL_CONFIG=$(echo "$FINAL_CONFIG" | yq eval ".kafka.\"ssl.key.password\" = \"$OPENBMP_KAFKA_SSL_KEY_PASSWORD\"" -)
 fi
 
-# group mapping settings
+# router groups
 if [ -n "$OPENBMP_ROUTER_GROUP_MAPPING" ]; then
-  FINAL_CONFIG=$(echo "$FINAL_CONFIG" | yq eval ".mapping.groups.router_group = $OPENBMP_ROUTER_GROUP_MAPPING" -)
+  FINAL_CONFIG=$(echo "$FINAL_CONFIG" | yq eval-all 'select(fileIndex == 0) * {"mapping": {"groups": {"router_group": select(fileIndex == 1)}}}' <(echo "$FINAL_CONFIG") <(echo "$OPENBMP_ROUTER_GROUP_MAPPING"))
 fi
 
+# peer groups
 if [ -n "$OPENBMP_PEER_GROUP_MAPPING" ]; then
-  FINAL_CONFIG=$(echo "$FINAL_CONFIG" | yq eval ".mapping.groups.peer_group = $OPENBMP_PEER_GROUP_MAPPING" -)
+  FINAL_CONFIG=$(echo "$FINAL_CONFIG" | yq eval-all 'select(fileIndex == 0) * {"mapping": {"groups": {"peer_group": select(fileIndex == 1)}}}' <(echo "$FINAL_CONFIG") <(echo "$OPENBMP_PEER_GROUP_MAPPING"))
 fi
 
 # save out the final configuration

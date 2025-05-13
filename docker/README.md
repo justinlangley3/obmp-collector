@@ -118,33 +118,31 @@ Example format for router group mapping:
 ```yaml
 environment:
   OPENBMP_ROUTER_GROUP_MAPPING: |
-    router_group:
-      - name: "router_group1"
-        regexp_hostname:
-          - .*\.iad\..*
-        prefix_range:
-          - 10.100.100.0/24
-          - 10.100.104.0/24
-          - "2001:0:0:100::/64"
-      ...
+    - name: "router_group1"
+      regexp_hostname:
+        - .*\.iad\..*
+      prefix_range:
+        - 10.100.100.0/24
+        - 10.100.104.0/24
+        - "2001:0:0:100::/64"
+    ...
 ```
 
 Example format for peer group mapping:
 ```yaml
 environment:
   OPENBMP_PEER_GROUP_MAPPING: |
-    peer_group:
-      - name: "lab"
-        regexp_hostname:
-          - .*\.lab\..*
-        prefix_range:
-          - 10.100.100.0/24
-          - 10.100.104.0/24
-        asn:
-          - 100
-          - 65000
-          - 65001
-      ...
+    - name: "lab"
+      regexp_hostname:
+        - .*\.lab\..*
+      prefix_range:
+        - 10.100.100.0/24
+        - 10.100.104.0/24
+      asn:
+        - 100
+        - 65000
+        - 65001
+    ...
 ```
 
 ### 4) Hostnames in Container
@@ -215,8 +213,3 @@ docker logs obmp-collector
 ```
 This is useful if the container exits due to
 invalid start or for another reason.
-
-     
-
-
-
