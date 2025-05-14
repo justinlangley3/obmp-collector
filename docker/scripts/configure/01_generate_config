@@ -2,7 +2,7 @@
 set -e
 
 # set the final configuration path
-OPENBMP_CONFIG_FILE="./test.yaml"
+OPENBMP_CONFIG_FILE="/config/openbmpd.conf"
 
 # collector base configuration
 BASE_DEFAULTS="
