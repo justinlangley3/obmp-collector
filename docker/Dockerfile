@@ -23,9 +23,6 @@
 # -----------------------------------------------
 FROM alpine:3.21 AS build
 
-# Add source files
-WORKDIR /ws
-COPY . .
 
 # Install build dependencies
 RUN apk update \
@@ -49,6 +46,13 @@ RUN apk update \
          yaml-cpp-dev \
          zlib-dev \
          zstd-dev
+
+# Add source files
+WORKDIR /ws
+
+COPY Server ./Server
+COPY CMakeLists.txt .
+COPY openbmpd_version.h.in .
 
 # Build the collector
 RUN rm -rf build \
@@ -111,8 +115,12 @@ COPY --chmod=755 docker/scripts/docker-entrypoint.sh /docker-entrypoint.sh
 
 WORKDIR /tmp
 
+VOLUME ["/config"]
+VOLUME ["/var/log"]
+
 ENTRYPOINT ["/docker-entrypoint.sh"]
 
-CMD ["/usr/bin/openbmpd", "-f", "-c", "/config/openbmpd.conf"]
+CMD ["/usr/bin/openbmpd", "-f", "-c", "/config/openbmpd.conf", "-l", "/var/log/openbmpd.log"]
 
 EXPOSE 5000
+
